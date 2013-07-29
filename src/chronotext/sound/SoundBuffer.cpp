@@ -1,4 +1,5 @@
 #include "SoundBuffer.h"
+#include <limits>
 
 using namespace std;
 using namespace ci;
@@ -30,20 +31,23 @@ void SoundBuffer::load(DataSourceRef source)
         throw runtime_error("WAV READER: EXPECTING PCM FORMAT");
     }
     
-    if (header->NumChannels != 1)
-    {
-        throw runtime_error("WAV READER: EXPECTING MONO");
-    }
+//    if (header->NumChannels != 1)
+//    {
+//        throw runtime_error("WAV READER: EXPECTING MONO");
+//    }
     
     if (header->BitsPerSample != 16)
     {
         throw runtime_error("WAV READER: EXPECTING 16-BITS-PER-SAMPLE");
     }
     
-    if (header->SampleRate != 44100)
-    {
-        throw runtime_error("WAV READER: EXPECTING SAMPLE-RATE OF 44100");
-    }
+//    if (header->SampleRate != 44100)
+//    {
+//        throw runtime_error("WAV READER: EXPECTING SAMPLE-RATE OF 44100");
+//    }
+    
+    channels = header->NumChannels;
+    bitsPerSample = header->BitsPerSample;
 
     sampleRate = header->SampleRate;
     sampleCount = (header->ChunkSize - 36) >> 1; // USING ChunkSize, WHICH IS MORE RELIABLE THAN Subchunk2Size
@@ -67,4 +71,22 @@ uint64_t SoundBuffer::getSampleRate()
 uint64_t SoundBuffer::getSampleCount()
 {
     return sampleCount;
+}
+
+unsigned short SoundBuffer::getChannels() {
+    return channels;
+}
+
+unsigned short SoundBuffer::getBitsPerSample() {
+    return bitsPerSample;
+}
+
+uint64_t SoundBuffer::getFrameCount() {
+    return getSampleCount() / getChannels();
+}
+
+float SoundBuffer::getSample(unsigned short chan, uint64_t frame) {
+    if (chan > getChannels()) throw runtime_error("WAV READER: CHANNEL DOES NOT EXIST");
+    if (frame > getFrameCount()) throw runtime_error("WAV READER: FRAME DOES NOT EXIST");
+    return *(getSamples() + (frame * getChannels()) + chan) / (double)numeric_limits<int16_t>::max();
 }
